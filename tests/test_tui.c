@@ -1,5 +1,7 @@
+#include <curses.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "../src/tui.h"
 
@@ -84,15 +86,93 @@ static int test_result_formatting(void)
 
     tui_context_init(&context);
     (void)snprintf(context.input_label, sizeof(context.input_label), "hello.txt");
+    (void)snprintf(context.result_source, sizeof(context.result_source), "File");
     (void)snprintf(context.digest_hex, sizeof(context.digest_hex), "5d41402abc4b2a76b9719d911017c592");
     context.last_size_bytes = 5U;
     context.last_elapsed_ms = 1.234;
+    context.last_blocks_processed = 1U;
 
     if (tui_format_results(&context, buffer, sizeof(buffer)) != MD5_SUCCESS) {
         return 1;
     }
 
-    return strstr(buffer, "5d41402abc4b2a76b9719d911017c592") == NULL || strstr(buffer, "Size: 5 bytes") == NULL;
+    return strstr(buffer, "5d41402abc4b2a76b9719d911017c592") == NULL || strstr(buffer, "Blocks: 1") == NULL;
+}
+
+static int test_multiline_text_editing(void)
+{
+    TUIContext context;
+
+    tui_context_init(&context);
+    context.state = STATE_HASH_TEXT;
+
+    tui_handle_input(&context, 'a');
+    tui_handle_input(&context, '\n');
+    tui_handle_input(&context, 'b');
+    if (strcmp(context.text_input, "a\nb") != 0 || context.text_cursor_pos != 3U) {
+        return 1;
+    }
+
+    tui_handle_input(&context, KEY_LEFT);
+    tui_handle_input(&context, KEY_BACKSPACE);
+    if (strcmp(context.text_input, "ab") != 0 || context.text_cursor_pos != 1U) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int test_file_filtering(void)
+{
+    TUIFileEntry entries[4] = {
+        {"..", 1, 0U, 0},
+        {"alpha.txt", 0, 10U, 0},
+        {"beta.bin", 0, 20U, 0},
+        {"notes", 1, 0U, 0}
+    };
+    size_t visible_indices[4];
+    size_t visible_count = tui_collect_visible_entries(entries, 4U, "be", visible_indices, 4U);
+
+    return visible_count != 2U || visible_indices[0] != 0U || visible_indices[1] != 2U;
+}
+
+static int test_result_save_and_history(void)
+{
+    TUIContext context;
+    char path[128];
+    char buffer[512];
+    FILE *stream;
+    size_t bytes_read;
+
+    tui_context_init(&context);
+    context.state = STATE_HASH_TEXT;
+    (void)snprintf(context.text_input, sizeof(context.text_input), "hello");
+    context.text_cursor_pos = strlen(context.text_input);
+
+    if (tui_compute_text_digest(&context) != MD5_SUCCESS) {
+        return 1;
+    }
+
+    if (context.history_count != 1U || context.return_state != STATE_HASH_TEXT) {
+        return 1;
+    }
+
+    (void)snprintf(path, sizeof(path), "/tmp/md5_tui_result_%ld.txt", (long)getpid());
+    if (tui_save_results_to_path(&context, path) != MD5_SUCCESS) {
+        return 1;
+    }
+
+    stream = fopen(path, "r");
+    if (stream == NULL) {
+        return 1;
+    }
+
+    bytes_read = fread(buffer, 1U, sizeof(buffer) - 1U, stream);
+    buffer[bytes_read] = '\0';
+    (void)fclose(stream);
+    unlink(path);
+
+    return bytes_read == 0U || strstr(buffer, "Source: Text") == NULL || strstr(buffer, "5d41402abc4b2a76b9719d911017c592") == NULL;
 }
 
 int main(void)
@@ -124,6 +204,21 @@ int main(void)
 
     if (test_result_formatting() != 0) {
         fprintf(stderr, "result formatting test failed\n");
+        return 1;
+    }
+
+    if (test_multiline_text_editing() != 0) {
+        fprintf(stderr, "multiline text editing test failed\n");
+        return 1;
+    }
+
+    if (test_file_filtering() != 0) {
+        fprintf(stderr, "file filtering test failed\n");
+        return 1;
+    }
+
+    if (test_result_save_and_history() != 0) {
+        fprintf(stderr, "result save/history test failed\n");
         return 1;
     }
 

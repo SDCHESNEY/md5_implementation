@@ -85,8 +85,39 @@ double get_time_ms(void)
 
 int clipboard_copy(const char *text)
 {
-    (void)text;
-    return MD5_ERROR_INVALID_ARG;
+    const char *commands[] = {
+#ifdef __APPLE__
+        "pbcopy",
+#endif
+        "xclip -selection clipboard",
+        "xsel --clipboard --input"
+    };
+    size_t command_index;
+
+    if (text == NULL) {
+        return MD5_ERROR_INVALID_ARG;
+    }
+
+    for (command_index = 0U; command_index < sizeof(commands) / sizeof(commands[0]); ++command_index) {
+        FILE *pipe = popen(commands[command_index], "w");
+        int close_status;
+
+        if (pipe == NULL) {
+            continue;
+        }
+
+        if (fputs(text, pipe) == EOF) {
+            (void)pclose(pipe);
+            continue;
+        }
+
+        close_status = pclose(pipe);
+        if (close_status == 0) {
+            return MD5_SUCCESS;
+        }
+    }
+
+    return MD5_ERROR_FILE_OPEN;
 }
 
 int validate_input(const char *input, size_t max_len)
