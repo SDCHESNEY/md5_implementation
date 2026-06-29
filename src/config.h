@@ -1,0 +1,19 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define MD5_VERSION "1.0.0"
+#define MD5_DIGEST_SIZE 16U
+#define MD5_HEX_SIZE 33U
+#define MD5_BUFFER_SIZE 65536U
+#define MD5_UI_MIN_ROWS 24
+#define MD5_UI_MIN_COLS 80
+
+#define MD5_SUCCESS 0
+#define MD5_ERROR_FILE_OPEN 1
+#define MD5_ERROR_FILE_READ 2
+#define MD5_ERROR_INVALID_ARG 3
+#define MD5_ERROR_MEMORY 4
+#define MD5_ERROR_TUI_INIT 5
+#define MD5_ERROR_PERMISSION 6
+
+#endif

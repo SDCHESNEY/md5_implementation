@@ -62,7 +62,6 @@ TEST_MAIN_OBJECTS := $(filter-out $(OBJ_DIR)/main.o,$(OBJECTS))
 # ==============================================================================
 
 TARGET := $(BIN_DIR)/md5
-TEST_TARGET := $(BIN_DIR)/md5_tests
 DEBUG_TARGET := $(BIN_DIR)/md5_debug
 
 # ==============================================================================
@@ -124,14 +123,8 @@ $(OBJ_DIR) $(BIN_DIR) $(FIXTURE_DIR):
 # ==============================================================================
 
 .PHONY: test
-test: $(TEST_TARGET)
-	@echo "Running test suite..."
-	@$(TEST_TARGET)
-
-$(TEST_TARGET): $(TEST_MAIN_OBJECTS) $(TEST_OBJECTS) | $(BIN_DIR)
-	@echo "Linking test binary: $@"
-	@$(CC) $(CFLAGS) $(TEST_MAIN_OBJECTS) $(TEST_OBJECTS) -o $@ $(LDFLAGS)
-	@echo "Test binary built: $@"
+test: test-md5 test-file-handler test-tui test-vectors
+	@echo "All test suites passed"
 
 .PHONY: test-md5
 test-md5: $(BIN_DIR)/test_md5

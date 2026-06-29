@@ -1,0 +1,8 @@
+PROJECT_NAME = "md5_implementation"
+OUTPUT_DIRECTORY = docs
+GENERATE_HTML = YES
+GENERATE_LATEX = NO
+RECURSIVE = YES
+INPUT = src docs
+FILE_PATTERNS = *.c *.h *.md
+QUIET = YES
