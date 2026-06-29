@@ -50,7 +50,8 @@ OBJECTS := $(SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 TEST_SOURCES := $(TEST_DIR)/test_md5.c \
                 $(TEST_DIR)/test_file_handler.c \
                 $(TEST_DIR)/test_tui.c \
-                $(TEST_DIR)/test_vectors.c
+				$(TEST_DIR)/test_vectors.c \
+				$(TEST_DIR)/test_cli.c
 
 TEST_OBJECTS := $(TEST_SOURCES:$(TEST_DIR)/%.c=$(OBJ_DIR)/test_%.o)
 
@@ -123,7 +124,7 @@ $(OBJ_DIR) $(BIN_DIR) $(FIXTURE_DIR):
 # ==============================================================================
 
 .PHONY: test
-test: test-md5 test-file-handler test-tui test-vectors
+test: test-md5 test-file-handler test-tui test-vectors test-cli
 	@echo "All test suites passed"
 
 .PHONY: test-md5
@@ -157,6 +158,14 @@ test-vectors: $(BIN_DIR)/test_vectors
 
 $(BIN_DIR)/test_vectors: $(OBJ_DIR)/md5.o $(OBJ_DIR)/test_vectors.o $(OBJ_DIR)/utils.o | $(BIN_DIR)
 	@$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+.PHONY: test-cli
+test-cli: $(TARGET) $(BIN_DIR)/test_cli
+	@echo "Running CLI integration tests..."
+	@$(BIN_DIR)/test_cli
+
+$(BIN_DIR)/test_cli: $(OBJ_DIR)/test_cli.o | $(BIN_DIR)
+	@$(CC) $(CFLAGS) $^ -o $@
 
 # ==============================================================================
 # CODE COVERAGE
