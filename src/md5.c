@@ -34,6 +34,22 @@ static uint32_t left_rotate(uint32_t value, uint32_t count)
     return (value << count) | (value >> (32U - count));
 }
 
+static void md5_get_state(const MD5_CTX *ctx, uint32_t state[4])
+{
+    state[0] = ctx->A;
+    state[1] = ctx->B;
+    state[2] = ctx->C;
+    state[3] = ctx->D;
+}
+
+static void md5_set_state(MD5_CTX *ctx, const uint32_t state[4])
+{
+    ctx->A = state[0];
+    ctx->B = state[1];
+    ctx->C = state[2];
+    ctx->D = state[3];
+}
+
 static void md5_transform(uint32_t state[4], const uint8_t block[64])
 {
     uint32_t a = state[0];
@@ -84,29 +100,42 @@ static void md5_transform(uint32_t state[4], const uint8_t block[64])
 
 void md5_init(MD5_CTX *ctx)
 {
-    ctx->bit_count = 0U;
-    ctx->state[0] = 0x67452301U;
-    ctx->state[1] = 0xefcdab89U;
-    ctx->state[2] = 0x98badcfeU;
-    ctx->state[3] = 0x10325476U;
+    if (ctx == NULL) {
+        return;
+    }
+
+    ctx->count = 0U;
+    ctx->A = 0x67452301U;
+    ctx->B = 0xefcdab89U;
+    ctx->C = 0x98badcfeU;
+    ctx->D = 0x10325476U;
     (void)memset(ctx->buffer, 0, sizeof(ctx->buffer));
 }
 
 void md5_update(MD5_CTX *ctx, const uint8_t *input, size_t length)
 {
-    size_t index = (size_t)((ctx->bit_count / 8U) % 64U);
-    size_t part_len = 64U - index;
+    uint32_t state[4];
+    size_t index = 0U;
+    size_t part_len = 0U;
     size_t offset = 0U;
 
-    ctx->bit_count += (uint64_t)length * 8U;
+    if (ctx == NULL || (input == NULL && length > 0U)) {
+        return;
+    }
+
+    index = (size_t)((ctx->count / 8U) % 64U);
+    part_len = 64U - index;
+    md5_get_state(ctx, state);
+
+    ctx->count += (uint64_t)length * 8U;
 
     if (length >= part_len) {
         (void)memcpy(&ctx->buffer[index], input, part_len);
-        md5_transform(ctx->state, ctx->buffer);
+        md5_transform(state, ctx->buffer);
         offset = part_len;
 
         while (offset + 63U < length) {
-            md5_transform(ctx->state, &input[offset]);
+            md5_transform(state, &input[offset]);
             offset += 64U;
         }
 
@@ -114,6 +143,7 @@ void md5_update(MD5_CTX *ctx, const uint8_t *input, size_t length)
     }
 
     (void)memcpy(&ctx->buffer[index], &input[offset], length - offset);
+    md5_set_state(ctx, state);
 }
 
 void md5_final(MD5_CTX *ctx, uint8_t digest[MD5_DIGEST_SIZE])
@@ -123,22 +153,36 @@ void md5_final(MD5_CTX *ctx, uint8_t digest[MD5_DIGEST_SIZE])
     size_t index;
     size_t pad_len;
 
-    for (index = 0; index < 8U; ++index) {
-        bit_length[index] = (uint8_t)((ctx->bit_count >> (index * 8U)) & 0xffU);
+    if (ctx == NULL || digest == NULL) {
+        return;
     }
 
-    index = (size_t)((ctx->bit_count / 8U) % 64U);
+    for (index = 0; index < 8U; ++index) {
+        bit_length[index] = (uint8_t)((ctx->count >> (index * 8U)) & 0xffU);
+    }
+
+    index = (size_t)((ctx->count / 8U) % 64U);
     pad_len = (index < 56U) ? (56U - index) : (120U - index);
 
     md5_update(ctx, padding, pad_len);
     md5_update(ctx, bit_length, sizeof(bit_length));
 
-    for (index = 0; index < 4U; ++index) {
-        digest[index * 4U] = (uint8_t)(ctx->state[index] & 0xffU);
-        digest[index * 4U + 1U] = (uint8_t)((ctx->state[index] >> 8U) & 0xffU);
-        digest[index * 4U + 2U] = (uint8_t)((ctx->state[index] >> 16U) & 0xffU);
-        digest[index * 4U + 3U] = (uint8_t)((ctx->state[index] >> 24U) & 0xffU);
-    }
+    digest[0] = (uint8_t)(ctx->A & 0xffU);
+    digest[1] = (uint8_t)((ctx->A >> 8U) & 0xffU);
+    digest[2] = (uint8_t)((ctx->A >> 16U) & 0xffU);
+    digest[3] = (uint8_t)((ctx->A >> 24U) & 0xffU);
+    digest[4] = (uint8_t)(ctx->B & 0xffU);
+    digest[5] = (uint8_t)((ctx->B >> 8U) & 0xffU);
+    digest[6] = (uint8_t)((ctx->B >> 16U) & 0xffU);
+    digest[7] = (uint8_t)((ctx->B >> 24U) & 0xffU);
+    digest[8] = (uint8_t)(ctx->C & 0xffU);
+    digest[9] = (uint8_t)((ctx->C >> 8U) & 0xffU);
+    digest[10] = (uint8_t)((ctx->C >> 16U) & 0xffU);
+    digest[11] = (uint8_t)((ctx->C >> 24U) & 0xffU);
+    digest[12] = (uint8_t)(ctx->D & 0xffU);
+    digest[13] = (uint8_t)((ctx->D >> 8U) & 0xffU);
+    digest[14] = (uint8_t)((ctx->D >> 16U) & 0xffU);
+    digest[15] = (uint8_t)((ctx->D >> 24U) & 0xffU);
 
     (void)memset(ctx, 0, sizeof(*ctx));
 }
@@ -146,6 +190,10 @@ void md5_final(MD5_CTX *ctx, uint8_t digest[MD5_DIGEST_SIZE])
 void md5_string(const char *str, uint8_t digest[MD5_DIGEST_SIZE])
 {
     MD5_CTX ctx;
+
+    if (str == NULL || digest == NULL) {
+        return;
+    }
 
     md5_init(&ctx);
     md5_update(&ctx, (const uint8_t *)str, strlen(str));
@@ -156,8 +204,12 @@ int md5_file(const char *filename, uint8_t digest[MD5_DIGEST_SIZE])
 {
     FILE *file = fopen(filename, "rb");
     MD5_CTX ctx;
-    uint8_t buffer[4096];
+    uint8_t buffer[MD5_BUFFER_SIZE];
     size_t bytes_read;
+
+    if (filename == NULL || digest == NULL) {
+        return MD5_ERROR_INVALID_ARG;
+    }
 
     if (file == NULL) {
         return MD5_ERROR_FILE_OPEN;

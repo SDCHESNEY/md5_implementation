@@ -7,8 +7,11 @@
 #include "config.h"
 
 typedef struct {
-    uint32_t state[4];
-    uint64_t bit_count;
+    uint32_t A;
+    uint32_t B;
+    uint32_t C;
+    uint32_t D;
+    uint64_t count;
     uint8_t buffer[64];
 } MD5_CTX;
 

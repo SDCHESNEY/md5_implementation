@@ -53,7 +53,7 @@ int hash_file(const char *path, FileMode mode, uint8_t digest[MD5_DIGEST_SIZE])
 int read_stdin(uint8_t digest[MD5_DIGEST_SIZE])
 {
     MD5_CTX ctx;
-    uint8_t buffer[4096];
+    uint8_t buffer[MD5_BUFFER_SIZE];
     size_t bytes_read;
 
     if (digest == NULL) {
