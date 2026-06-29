@@ -196,6 +196,34 @@ The TUI shall utilize the **ncurses** library for cross-platform terminal contro
 - **Clipboard Integration:** Copy results to system clipboard (platform-specific)
 - **History:** Recent files and searches (last 10 entries)
 
+### 3.7 Enhanced TUI Behavior Roadmap
+
+The following items are considered a feature enhancement layer on top of the baseline TUI described above. They are intended for a post-v1.0 iteration once the core menu flow, hashing paths, and results display are stable.
+
+#### 3.7.1 Rich Text Entry Workflow
+- Full multiline text editing with visible cursor placement
+- Backspace, delete, and line-break aware editing behavior
+- Clear distinction between editing, compute, and cancel actions
+- Live character and byte count feedback for the current input buffer
+
+#### 3.7.2 Advanced File Browser Behavior
+- Persistent selection state while navigating directories
+- Incremental search and filtering within the current directory view
+- Directory traversal shortcuts including parent navigation and refresh
+- Inline file metadata such as size, type, and last modified timestamp where practical
+
+#### 3.7.3 Enhanced Results Interaction
+- Copy digest or full result details to clipboard when platform support exists
+- Save rendered result summaries to a user-specified file path
+- Display block count, elapsed time, and input source consistently across result views
+- Allow quick return to the originating workflow without losing prior context
+
+#### 3.7.4 Session History and UX Refinement
+- In-memory recent history for files, text inputs, and recent hashes
+- Optional persisted history for the last 10 successful operations
+- Clear status line messaging for success, failure, and long-running operations
+- More intentional resize handling so partially rendered screens recover cleanly after `SIGWINCH`
+
 ---
 
 ## 4. Architecture and Design
@@ -669,6 +697,7 @@ Follow Semantic Versioning (SemVer):
 - Configuration file support (.md5rc)
 - Internationalization (i18n) support
 - Web UI interface using libmicrohttpd
+- Deeper TUI behavior including multiline text editing, searchable file browsing, richer results actions, and persisted session history
 
 ### 13.2 Platform Expansion
 

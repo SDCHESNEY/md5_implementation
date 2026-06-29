@@ -148,7 +148,7 @@ test-tui: $(BIN_DIR)/test_tui
 	@echo "Running TUI tests..."
 	@$(BIN_DIR)/test_tui
 
-$(BIN_DIR)/test_tui: $(OBJ_DIR)/tui.o $(OBJ_DIR)/test_tui.o $(OBJ_DIR)/utils.o | $(BIN_DIR)
+$(BIN_DIR)/test_tui: $(OBJ_DIR)/tui.o $(OBJ_DIR)/test_tui.o $(OBJ_DIR)/utils.o $(OBJ_DIR)/md5.o $(OBJ_DIR)/file_handler.o | $(BIN_DIR)
 	@$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 .PHONY: test-vectors
